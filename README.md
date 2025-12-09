@@ -42,7 +42,7 @@ The interception happens via **LangGraph's sequential workflow** — the tool is
 User Input → Planner → Policy Enforcer → (maybe) Tool → Responder
 ```
 
-📊 **[View Interactive Concept Map](https://htmlpreview.github.io/?https://github.com/ai-agents-cybersecurity/oscal-agent-guardrails/blob/main/map_oscal_agent_guardrails.html)** *(opens in browser)*
+📊 **[View Interactive Concept Map](https://raw.githack.com/ai-agents-cybersecurity/oscal-agent-guardrails/main/map_oscal_agent_guardrails.html)** *(opens in browser)*
 
 ---
 
