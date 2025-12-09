@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conceptual Map — OSCAL Agent Guardrails</title>
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+        }
+        #header {
+            background: linear-gradient(135deg, #4285F4, #34A853);
+            color: white;
+            padding: 16px 24px;
+            text-align: center;
+        }
+        #header h1 { font-size: 1.5rem; font-weight: 500; }
+        #header p { font-size: 0.85rem; opacity: 0.9; margin-top: 4px; }
+        #map {
+            width: 100%;
+            height: calc(100vh - 80px);
+            background: #ffffff;
+        }
+        #legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 8px;
+            padding: 12px 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-size: 12px;
+        }
+        #legend h4 { margin-bottom: 8px; color: #3c4043; }
+        .legend-item { display: flex; align-items: center; margin: 4px 0; }
+        .legend-dot {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            border: 2px solid;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>OSCAL Agent Guardrails — Conceptual Map</h1>
+        <p>Drag nodes to reposition • Double-click to release • Hover for details</p>
+    </div>
+    <div id="map"></div>
+    <div id="legend">
+        <h4>Legend</h4>
+        <div class="legend-item"><span class="legend-dot" style="background:#E8F5E9; border-color:#34A853;"></span> Core Components</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#E3F2FD; border-color:#4285F4;"></span> Workflow Elements</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#FFF3E0; border-color:#FB8C00;"></span> Policy Decisions</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#FCE4EC; border-color:#E91E63;"></span> Policy Categories</div>
+    </div>
+
+    <script type="text/javascript">
+        // === NODES ===
+        var nodes = new vis.DataSet([
+            // Core Components (Green)
+            { id: "oscal", label: "OSCAL", title: "<b>OSCAL</b><br>Open Security Controls Assessment Language<br>Acts as the policy brain for guardrails", group: "core", size: 30 },
+            { id: "llm_agent", label: "LLM Agent", title: "<b>LLM Agent</b><br>Language model-based agent<br>Subject to policy guardrails", group: "core", size: 28 },
+            { id: "guardrails", label: "Guardrails", title: "<b>Guardrails</b><br>Runtime policy enforcement<br>Controls what the agent can do", group: "core", size: 26 },
+            { id: "oscal_profile", label: "OSCAL Profile\n(JSON/YAML)", title: "<b>OSCAL Profile</b><br>Policy configuration file<br>Defines controls and effects", group: "core", size: 24 },
+            
+            // Workflow Elements (Blue)
+            { id: "user_input", label: "User Input", title: "<b>User Input</b><br>User request or prompt<br>Entry point to the workflow", group: "workflow", size: 22 },
+            { id: "planner", label: "Planner\n(LLM)", title: "<b>Planner Agent</b><br>Turns user intent into proposed tool call<br>Outputs tool_name + args", group: "workflow", size: 26 },
+            { id: "policy_enforcer", label: "Policy Enforcer\n(OSCAL Engine)", title: "<b>Policy Enforcer</b><br>Consults OSCAL profile<br>Decides allow/deny/needs_approval", group: "workflow", size: 28 },
+            { id: "responder", label: "Responder\n(LLM)", title: "<b>Responder Agent</b><br>Explains outcome to user<br>Describes what happened and why", group: "workflow", size: 26 },
+            { id: "proposed_call", label: "Proposed Call", title: "<b>Proposed Call</b><br>Data structure with tool_name + args<br>Not executed until approved", group: "workflow", size: 20 },
+            { id: "tool_execution", label: "Tool Execution", title: "<b>Tool Execution</b><br>Actual tool invocation<br>Only if policy allows", group: "workflow", size: 22 },
+            { id: "langgraph", label: "LangGraph\nWorkflow", title: "<b>LangGraph</b><br>Sequential workflow orchestration<br>Enables interception pattern", group: "workflow", size: 24 },
+            { id: "whitelist", label: "Whitelist Pattern", title: "<b>Whitelist Pattern</b><br>Unknown tools denied by default<br>Only explicit allows permitted", group: "workflow", size: 20 },
+            
+            // Policy Decisions (Orange)
+            { id: "allow", label: "Allow", title: "<b>Allow</b><br>Tool execution permitted<br>Proceeds to execute_tool()", group: "decision", size: 18 },
+            { id: "deny", label: "Deny", title: "<b>Deny</b><br>Tool execution blocked<br>Request rejected", group: "decision", size: 18 },
+            { id: "needs_approval", label: "Needs Approval", title: "<b>Needs Approval</b><br>Requires human authorization<br>Pending manual review", group: "decision", size: 18 },
+            
+            // Policy Categories (Pink)
+            { id: "data_access", label: "Data Access", title: "<b>Data Access</b><br>PII handling, file patterns<br>Database query controls", group: "policy", size: 16 },
+            { id: "output_filter", label: "Output Filtering", title: "<b>Output Filtering</b><br>Block secrets, profanity<br>Code injection prevention", group: "policy", size: 16 },
+            { id: "rate_limit", label: "Rate Limiting", title: "<b>Rate Limiting</b><br>API calls per minute<br>Token budgets", group: "policy", size: 16 },
+            { id: "model_select", label: "Model Selection", title: "<b>Model Selection</b><br>Cheaper models for low-risk<br>GPT-4 for sensitive", group: "policy", size: 16 },
+            { id: "prompt_defense", label: "Prompt Injection\nDefense", title: "<b>Prompt Injection Defense</b><br>Detect jailbreak attempts<br>Block malicious prompts", group: "policy", size: 16 },
+            { id: "audit_log", label: "Audit Logging", title: "<b>Audit Logging</b><br>Action logging requirements<br>Retention policies", group: "policy", size: 16 },
+            { id: "human_loop", label: "Human-in-the-Loop", title: "<b>Human-in-the-Loop</b><br>Escalation thresholds<br>Approval workflows", group: "policy", size: 16 },
+            { id: "ext_comms", label: "External Comms", title: "<b>External Communications</b><br>Allowed domains<br>Email/webhook destinations", group: "policy", size: 16 },
+            { id: "code_exec", label: "Code Execution", title: "<b>Code Execution</b><br>Sandboxing rules<br>Language and timeout limits", group: "policy", size: 16 }
+        ]);
+
+        // === EDGES ===
+        var edges = new vis.DataSet([
+            // Core flow
+            { from: "oscal", to: "guardrails", label: "enables", title: "<b>enables</b>" },
+            { from: "guardrails", to: "llm_agent", label: "constrains", title: "<b>constrains</b>" },
+            { from: "oscal_profile", to: "policy_enforcer", label: "configures", title: "<b>configures</b>" },
+            
+            // Workflow sequence
+            { from: "user_input", to: "planner", label: "triggers", title: "<b>triggers</b>" },
+            { from: "planner", to: "proposed_call", label: "generates", title: "<b>generates</b>" },
+            { from: "proposed_call", to: "policy_enforcer", label: "evaluated by", title: "<b>evaluated by</b>" },
+            { from: "policy_enforcer", to: "responder", label: "informs", title: "<b>informs</b>" },
+            { from: "responder", to: "user_input", label: "responds to", title: "<b>responds to</b>", dashes: true },
+            
+            // LangGraph orchestration
+            { from: "langgraph", to: "planner", label: "orchestrates", title: "<b>orchestrates</b>" },
+            { from: "langgraph", to: "policy_enforcer", label: "orchestrates", title: "<b>orchestrates</b>" },
+            { from: "langgraph", to: "responder", label: "orchestrates", title: "<b>orchestrates</b>" },
+            
+            // Policy decisions
+            { from: "policy_enforcer", to: "allow", label: "may return", title: "<b>may return</b>" },
+            { from: "policy_enforcer", to: "deny", label: "may return", title: "<b>may return</b>" },
+            { from: "policy_enforcer", to: "needs_approval", label: "may return", title: "<b>may return</b>" },
+            { from: "allow", to: "tool_execution", label: "permits", title: "<b>permits</b>" },
+            { from: "deny", to: "tool_execution", label: "blocks", title: "<b>blocks</b>", dashes: true },
+            { from: "needs_approval", to: "human_loop", label: "requires", title: "<b>requires</b>" },
+            
+            // Whitelist pattern
+            { from: "whitelist", to: "policy_enforcer", label: "implements", title: "<b>implements</b>" },
+            { from: "whitelist", to: "deny", label: "defaults to", title: "<b>defaults to</b>" },
+            
+            // Policy categories controlled by OSCAL
+            { from: "oscal", to: "data_access", label: "controls", title: "<b>controls</b>" },
+            { from: "oscal", to: "output_filter", label: "controls", title: "<b>controls</b>" },
+            { from: "oscal", to: "rate_limit", label: "controls", title: "<b>controls</b>" },
+            { from: "oscal", to: "model_select", label: "controls", title: "<b>controls</b>" },
+            { from: "oscal", to: "prompt_defense", label: "controls", title: "<b>controls</b>" },
+            { from: "oscal", to: "audit_log", label: "controls", title: "<b>controls</b>" },
+            { from: "oscal", to: "human_loop", label: "controls", title: "<b>controls</b>" },
+            { from: "oscal", to: "ext_comms", label: "controls", title: "<b>controls</b>" },
+            { from: "oscal", to: "code_exec", label: "controls", title: "<b>controls</b>" }
+        ]);
+
+        // === OPTIONS ===
+        var options = {
+            groups: {
+                core: {
+                    shape: "dot",
+                    color: { border: "#34A853", background: "#E8F5E9", highlight: { border: "#2E7D32", background: "#C8E6C9" } },
+                    font: { size: 14, color: "#1B5E20" },
+                    borderWidth: 2
+                },
+                workflow: {
+                    shape: "dot",
+                    color: { border: "#4285F4", background: "#E3F2FD", highlight: { border: "#1565C0", background: "#BBDEFB" } },
+                    font: { size: 14, color: "#0D47A1" },
+                    borderWidth: 2
+                },
+                decision: {
+                    shape: "dot",
+                    color: { border: "#FB8C00", background: "#FFF3E0", highlight: { border: "#EF6C00", background: "#FFE0B2" } },
+                    font: { size: 13, color: "#E65100" },
+                    borderWidth: 2
+                },
+                policy: {
+                    shape: "dot",
+                    color: { border: "#E91E63", background: "#FCE4EC", highlight: { border: "#C2185B", background: "#F8BBD9" } },
+                    font: { size: 12, color: "#880E4F" },
+                    borderWidth: 2
+                }
+            },
+            edges: {
+                color: { color: "#B0BEC5", highlight: "#34A853", hover: "#4285F4" },
+                arrows: { to: { enabled: true, scaleFactor: 0.6 } },
+                font: { align: "middle", size: 11, color: "#5f6368", strokeWidth: 3, strokeColor: "#ffffff" },
+                width: 1.5,
+                smooth: { type: "cubicBezier", roundness: 0.4 }
+            },
+            physics: {
+                solver: "forceAtlas2Based",
+                forceAtlas2Based: {
+                    gravitationalConstant: -60,
+                    centralGravity: 0.008,
+                    springLength: 120,
+                    springConstant: 0.15,
+                    avoidOverlap: 0.5
+                },
+                maxVelocity: 100,
+                minVelocity: 0.1,
+                stabilization: { iterations: 200 }
+            },
+            interaction: {
+                hover: true,
+                tooltipDelay: 100,
+                hideEdgesOnDrag: true
+            }
+        };
+
+        // === INITIALIZE NETWORK ===
+        var container = document.getElementById("map");
+        var data = { nodes: nodes, edges: edges };
+        var network = new vis.Network(container, data, options);
+
+        // Fix node on drag end
+        network.on("dragEnd", function(params) {
+            if (params.nodes.length > 0) {
+                nodes.update({ id: params.nodes[0], fixed: true });
+            }
+        });
+
+        // Release node on double click
+        network.on("doubleClick", function(params) {
+            if (params.nodes.length > 0) {
+                nodes.update({ id: params.nodes[0], fixed: false });
+            }
+        });
+    </script>
+</body>
+</html>

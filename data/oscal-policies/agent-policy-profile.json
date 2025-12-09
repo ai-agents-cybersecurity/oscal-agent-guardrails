@@ -1,0 +1,38 @@
+{
+  "profile": {
+    "uuid": "11111111-2222-3333-4444-555555555555",
+    "metadata": {
+      "title": "Agent Tool Usage Policy Profile",
+      "version": "0.1.0"
+    },
+    "imports": [],
+    "modify": {
+      "controls": [
+        {
+          "control-id": "AG-TOOL-READ-PUBLIC",
+          "props": [
+            { "name": "og:tool-name", "value": "read_public_file" },
+            { "name": "og:effect", "value": "allow" },
+            { "name": "og:reason", "value": "Reading non-sensitive files is allowed." }
+          ]
+        },
+        {
+          "control-id": "AG-TOOL-READ-SECRET",
+          "props": [
+            { "name": "og:tool-name", "value": "read_secret_file" },
+            { "name": "og:effect", "value": "needs_approval" },
+            { "name": "og:reason", "value": "Secret file access requires human approval." }
+          ]
+        },
+        {
+          "control-id": "AG-TOOL-EXFILTRATE",
+          "props": [
+            { "name": "og:tool-name", "value": "exfiltrate_data" },
+            { "name": "og:effect", "value": "deny" },
+            { "name": "og:reason", "value": "Data exfiltration is forbidden." }
+          ]
+        }
+      ]
+    }
+  }
+}
